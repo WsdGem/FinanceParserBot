@@ -6,25 +6,37 @@ import config
 bot = telebot.TeleBot("7756223312:AAFRPLTx19Sh5QmFREYl3qfTm_LJu8Ceinw")
 
 
-@bot.message_handler(commands=['start'])
+@bot.message_handler(commands=['start']) # Старт
 def start(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btn1 = types.KeyboardButton("FAQ")
-    btn2 = types.KeyboardButton("Подключение")
+    btn2 = types.KeyboardButton("Начать")
     btn3 = types.KeyboardButton("База данных")
     markup.add(btn1, btn2, btn3)
     bot.send_message(message.chat.id,
-                     text="Привет, {0.first_name}!".format(
+                     text="Привет, {0.first_name}! \n Если вы здесь впервые, то нажмите на кнопку FAQ".format(
                          message.from_user), reply_markup=markup)
 
 
 @bot.message_handler(content_types=['text'])
 def func(message):
-    if (message.text == ""):
-        bot.send_message(message.chat.id, text="")
 
-    elif (message.text == ""):
-        bot.send_message(message.chat.id, text="")
+    if (message.text == "Начать"):
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        btn1 = types.KeyboardButton("Google Таблицы")
+        btn2 = types.KeyboardButton("Microsoft Excel")
+        back = types.KeyboardButton("Вернуться в главное меню")
+        markup.add(btn1, btn2, back)
+        bot.send_message(message.chat.id, text="Выбери тип таблицы", reply_markup=markup)
+
+    elif (message.text == "Google Таблицы"):
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        btn1 = types.KeyboardButton(".txt")
+        btn2 = types.KeyboardButton(".pdf")
+        back = types.KeyboardButton("Вернуться в главное меню")
+        markup.add(btn1, btn2, back)
+        bot.send_message(message.chat.id, text="Выбери тип файла", reply_markup=markup)
+        
 
     elif (message.text == "FAQ"):
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -35,19 +47,13 @@ def func(message):
         markup.add(btn1, btn2, btn3, back)
         bot.send_message(message.chat.id, text="Часто задаваемые вопросы", reply_markup=markup)
 
-    elif (message.text == ""):
-        bot.send_message(message.chat.id, "У меня нет имени..")
-
-    elif message.text == "":
-        bot.send_message(message.chat.id, text="Поздороваться с читателями")
-
     elif (message.text == "Вернуться в главное меню"):
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         start(message)
-
         bot.send_message(message.chat.id, text="Вы вернулись в главное меню", reply_markup=markup)
+
     else:
-        bot.send_message(message.chat.id, text="На такую комманду я не запрограммировал..")
+        bot.send_message(message.chat.id, text="Неправильная команда")
 
 
 bot.polling(none_stop=True)
