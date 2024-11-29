@@ -2,11 +2,13 @@ import telebot
 from telebot import types
 import config
 
-
 bot = telebot.TeleBot("7756223312:AAFRPLTx19Sh5QmFREYl3qfTm_LJu8Ceinw")
 
+global table_type
+global file_type
 
-@bot.message_handler(commands=['start']) # Старт
+
+@bot.message_handler(commands=['start'])  # Старт
 def start(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btn1 = types.KeyboardButton("FAQ")
@@ -20,8 +22,7 @@ def start(message):
 
 @bot.message_handler(content_types=['text'])
 def func(message):
-
-    if (message.text == "Начать"):
+    if message.text == "Начать":
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         btn1 = types.KeyboardButton("Google Таблицы")
         btn2 = types.KeyboardButton("Microsoft Excel")
@@ -29,16 +30,48 @@ def func(message):
         markup.add(btn1, btn2, back)
         bot.send_message(message.chat.id, text="Выбери тип таблицы", reply_markup=markup)
 
-    elif (message.text == "Google Таблицы"):
+    elif message.text == "Google Таблицы":
+        table_type = "Google"
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         btn1 = types.KeyboardButton(".txt")
         btn2 = types.KeyboardButton(".pdf")
         back = types.KeyboardButton("Вернуться в главное меню")
         markup.add(btn1, btn2, back)
+        bot.send_message(message.chat.id, text="Вы выбрали Google Таблицы")
         bot.send_message(message.chat.id, text="Выбери тип файла", reply_markup=markup)
-        
 
-    elif (message.text == "FAQ"):
+
+
+    elif message.text == "Microsoft Excel":
+        table_type = "Exel"
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        btn1 = types.KeyboardButton(".txt")
+        btn2 = types.KeyboardButton(".pdf")
+        back = types.KeyboardButton("Вернуться в главное меню")
+        markup.add(btn1, btn2, back)
+        bot.send_message(message.chat.id, text="Вы выбрали Microsoft Excel")
+        bot.send_message(message.chat.id, text="Выбери тип файла", reply_markup=markup)
+
+
+    elif message.text == ".txt":
+        file_type = ".txt"
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        btn1 = types.KeyboardButton(".txt")
+        btn2 = types.KeyboardButton(".pdf")
+        back = types.KeyboardButton("Вернуться в главное меню")
+        markup.add(btn1, btn2, back)
+        bot.send_message(message.chat.id, text="Вы выбрали .txt")
+
+    elif message.text == ".pdf":
+        file_type = ".pdf"
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        btn1 = types.KeyboardButton(".txt")
+        btn2 = types.KeyboardButton(".pdf")
+        back = types.KeyboardButton("Вернуться в главное меню")
+        markup.add(btn1, btn2, back)
+        bot.send_message(message.chat.id, text="Вы выбрали .pdf")
+
+    elif message.text == "FAQ":
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         btn1 = types.KeyboardButton("Как подключить таблицу")
         btn2 = types.KeyboardButton("Что делает бот")
@@ -47,13 +80,12 @@ def func(message):
         markup.add(btn1, btn2, btn3, back)
         bot.send_message(message.chat.id, text="Часто задаваемые вопросы", reply_markup=markup)
 
-    elif (message.text == "Вернуться в главное меню"):
+    elif message.text == "Вернуться в главное меню":
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         start(message)
         bot.send_message(message.chat.id, text="Вы вернулись в главное меню", reply_markup=markup)
 
     else:
         bot.send_message(message.chat.id, text="Неправильная команда")
-
 
 bot.polling(none_stop=True)
