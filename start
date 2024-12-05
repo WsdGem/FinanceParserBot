@@ -1,8 +1,8 @@
 import telebot
 from telebot import types
-import config
+from token import BOT_TOKEN
 
-bot = telebot.TeleBot("7756223312:AAFRPLTx19Sh5QmFREYl3qfTm_LJu8Ceinw")
+bot = telebot.TeleBot(BOT_TOKEN)
 
 global table_type
 global file_type
