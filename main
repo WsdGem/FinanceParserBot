@@ -32,3 +32,71 @@ def handle_document(message):
 # Запуск бота
 if __name__ == '__main__':
     bot.polling(none_stop=True)
+
+
+
+
+
+
+
+===========================
+
+
+import telebot
+import PyPDF2
+import re
+from telebot import types
+from io import BytesIO
+from aaa import BOT_TOKEN
+
+bot = telebot.TeleBot(BOT_TOKEN)
+
+
+@bot.message_handler(commands=['start'])  # Старт
+def start(message):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    btn1 = types.KeyboardButton("FAQ")
+    btn2 = types.KeyboardButton("Начать")
+    btn3 = types.KeyboardButton("База данных")
+    markup.add(btn1, btn2, btn3)
+    bot.send_message(message.chat.id,
+                     text="Привет, {0.first_name}! \n Если вы здесь впервые, то нажмите на кнопку FAQ".format(
+                         message.from_user), reply_markup=markup)
+
+
+@bot.message_handler(content_types=['text'])
+def func(message):
+    if message.text == "Начать":
+        bot.send_message(message.chat.id, 'Отправь мне PDF файл.')
+
+
+@bot.message_handler(content_types=['document'])
+def handle_document(message):
+    if message.document.mime_type == 'application/pdf':
+        # Скачивание файла
+        file_info = bot.get_file(message.document.file_id)
+        downloaded_file = bot.download_file(file_info.file_path)
+
+        # Чтение данных из PDF файла
+        pdf_reader = PyPDF2.PdfReader(BytesIO(downloaded_file))
+        text = ''
+
+        for page in pdf_reader.pages:
+            page_text = page.extract_text()
+            # Пример: извлечение строк, начинающихся с 'Заголовок'
+            matches = re.findall('(?<=Сумма).*?\\n', page_text)
+            text += '\n'.join(matches) + '\n'
+        
+        # Чтение данных из PDF файла
+        pdf_reader = PyPDF2.PdfReader(BytesIO(downloaded_file))
+        text = ''
+        for page in pdf_reader.pages:
+            text += page.extract_text() + '\n'
+            
+        # Отправка данных в чат
+        bot.send_message(message.chat.id, text if text else 'Данные не найдены.')
+
+
+# Запуск бота
+if __name__ == '__main__':
+    bot.polling(none_stop=True)
