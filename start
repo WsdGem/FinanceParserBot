@@ -175,22 +175,6 @@ bot.polling()
 ===========================
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import telebot
 from PyPDF2 import PdfReader
 import gspread
