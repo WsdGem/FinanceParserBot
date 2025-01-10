@@ -159,3 +159,108 @@ def send_all_data(message):
 
 
 bot.polling()
+
+
+
+
+
+
+
+
+
+
+
+
+
+===========================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import telebot
+from PyPDF2 import PdfReader
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+API_TOKEN = "7756223312:AAFRPLTx19Sh5QmFREYl3qfTm_LJu8Ceinw"  # Замените `YOUR_API_TOKEN` на токен вашего бота
+bot = telebot.TeleBot(API_TOKEN)
+
+# Настройка доступа к Google Sheets
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+creds = ServiceAccountCredentials.from_json_keyfile_name('C:/Users/student/Desktop/tg/transfertablesbot-56526b15c394.json', scope)
+client = gspread.authorize(creds)
+
+# Открытие Google Таблицы
+spreadsheet = client.open("PDF Data").sheet1
+
+# Хранение загруженного файла
+pdf_content = {}
+
+@bot.message_handler(content_types=['document'])
+def handle_document(message):
+    file_info = bot.get_file(message.document.file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+
+    # Сохранение файла
+    with open('uploaded_file.pdf', 'wb') as new_file:
+        new_file.write(downloaded_file)
+
+    # Чтение содержимого PDF
+    reader = PdfReader('uploaded_file.pdf')
+    content = ""
+    for page in reader.pages:
+        content += page.extract_text() + '\n'
+
+    pdf_content[message.chat.id] = content
+
+    # Запись в Google Таблицу
+    spreadsheet.append_row([content])
+
+    bot.reply_to(message, "PDF файл был успешно загружен, обработан и добавлен в Google Таблицу.")
+
+@bot.message_handler(commands=['getdata'])
+def get_data(message):
+    if message.chat.id in pdf_content:
+        bot.send_message(message.chat.id, "Введите ключевое слово или фразу, чтобы получить соответствующую информацию из PDF:")
+        bot.register_next_step_handler(message, send_relevant_data)
+    else:
+        bot.reply_to(message, "Сначала загрузите PDF файл.")
+
+def send_relevant_data(message):
+    keyword = message.text
+    content = pdf_content[message.chat.id]
+
+    # Поиск информации по ключевому слову
+    relevant_lines = [line for line in content.split('\n') if keyword.lower() in line.lower()]
+
+    if relevant_lines:
+        response = "Вот информация, которую я нашел:\n" + "\n".join(relevant_lines)
+    else:
+        response = "К сожалению, я не нашел информации по вашему запросу."
+
+    bot.send_message(message.chat.id, response)
+
+@bot.message_handler(commands=['alldata'])
+def send_all_data(message):
+    if message.chat.id in pdf_content:
+        content = pdf_content[message.chat.id]
+        response = "Вот все данные из вашего PDF файла:\n" + content
+        bot.send_message(message.chat.id, response)
+    else:
+        bot.reply_to(message, "Сначала загрузите PDF файл.")
+
+bot.polling()
