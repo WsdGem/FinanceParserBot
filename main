@@ -100,3 +100,99 @@ def handle_document(message):
 # Запуск бота
 if __name__ == '__main__':
     bot.polling(none_stop=True)
+
+
+
+=====================================
+
+
+
+
+import telebot
+from PyPDF2 import PdfReader
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import re
+
+API_TOKEN = "7756223312:AAFRPLTx19Sh5QmFREYl3qfTm_LJu8Ceinw"
+bot = telebot.TeleBot(API_TOKEN)
+
+# Настройка доступа к Google Sheets
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+creds = ServiceAccountCredentials.from_json_keyfile_name('/home/student/Загрузки/transfertablesbot-56526b15c394.json',
+                                                         scope)
+client = gspread.authorize(creds)
+
+# Открытие Google Таблицы
+spreadsheet = client.open("PDF Data").sheet1
+
+# Хранение загруженного файла
+pdf_content = {}
+
+
+# Функция для извлечения имен (пример: "Иван Иванов")
+def extract_names(text):
+    # Простой шаблон для поиска имен (пример: "Иван Иванов")
+    name_pattern = r"[А-ЯЁ][а-яё]+\s[А-ЯЁ][а-яё]+"
+    return re.findall(name_pattern, text)
+
+
+# Функция для извлечения дат (пример: "01.01.2023")
+def extract_dates(text):
+    # Шаблон для поиска дат в формате DD.MM.YYYY
+    date_pattern = r"\d{2}\.\d{2}\.\d{4}"
+    return re.findall(date_pattern, text)
+
+
+# Функция для проверки и добавления заголовков
+def ensure_headers():
+    # Получаем первую строку таблицы
+    existing_headers = spreadsheet.row_values(1)
+    # Заголовки, которые должны быть
+    required_headers = ["Плательщик", "Получатель", "Дата", "ИНН плательщика", "ИНН получателя", "Сумма",
+                        "Статус платежа"]
+
+    # Если заголовки отсутствуют, добавляем их
+    if existing_headers != required_headers:
+        spreadsheet.insert_row(required_headers, 1)
+
+
+@bot.message_handler(content_types=['document'])
+def handle_document(message):
+    file_info = bot.get_file(message.document.file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+
+    # Сохранение файла
+    with open('uploaded_file.pdf', 'wb') as new_file:
+        new_file.write(downloaded_file)
+
+    # Чтение содержимого PDF
+    reader = PdfReader('uploaded_file.pdf')
+    content = ""
+    for page in reader.pages:
+        content += page.extract_text() + '\n'
+
+    pdf_content[message.chat.id] = content
+
+    # Извлечение данных
+    names = extract_names(content)
+    dates = extract_dates(content)
+
+    # Убедимся, что заголовки есть в таблице
+    ensure_headers()
+
+    # Подготовка данных для Google Таблицы
+    data_to_insert = []
+
+    # Заполнение данных
+    for name, date in zip(names, dates):
+        # Пример: добавляем только имя и дату, остальные поля оставляем пустыми
+        data_to_insert.append([name, "", date, "", "", "", ""])
+
+    # Добавление новых данных в Google Таблицу (без очистки старых данных)
+    spreadsheet.append_rows(data_to_insert)
+
+    bot.reply_to(message, "PDF файл был успешно загружен, обработан и добавлен в Google Таблицу.")
+
+
+bot.polling()
