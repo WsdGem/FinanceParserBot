@@ -9,13 +9,12 @@ bot = telebot.TeleBot(API_TOKEN)
 
 # Настройка доступа к Google Sheets
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name('D:/tgg/transfertablesbot-56526b15c394.json', scope)
+creds = ServiceAccountCredentials.from_json_keyfile_name('C:/Users/student/Desktop/GTD', scope)
 client = gspread.authorize(creds)
 
 # Открытие Google Таблицы
 spreadsheet = client.open("PDF Data").sheet1
 
-# Хранение загруженного файла
 pdf_content = {}
 
 
@@ -73,7 +72,7 @@ def ensure_headers():
                         "Статус платежа"] # Заголовки
 
     if existing_headers != required_headers:
-        spreadsheet.insert_row(required_headers, 1) # Если заголовки отсутствуют
+        spreadsheet.insert_row(required_headers, 1)
 
 
 @bot.message_handler(content_types=['document'])
@@ -91,8 +90,6 @@ def handle_document(message):
         content = ""
         for page in reader.pages:
             content += page.extract_text() + '\n'
-
-        # Сохраняем содержимое PDF для текущего чата
         pdf_content[message.chat.id] = content
 
         # Извлечение данных
@@ -106,19 +103,14 @@ def handle_document(message):
         payment_status = extract_payment_status(content)  # Извлекаем статус платежа
 
 
-        # Убедимся, что заголовки есть в таблице
         ensure_headers()
-
-        # Подготовка данных для Google Таблицы
         data_to_insert = []
 
         # Добавление данных в Google Таблицу
         data_to_insert.append([payer, recipient, date, payer_inn, recipient_inn, amount, payment_status])
 
-        # Логирование данных перед добавлением
         print("Данные для добавления:", data_to_insert)
 
-        # Добавление новых данных в Google Таблицу (без очистки старых данных)
         spreadsheet.append_rows(data_to_insert)
 
         bot.reply_to(message, "PDF файл был успешно добавлен в Google Таблицу.")
@@ -130,11 +122,8 @@ def handle_document(message):
 # Команда /all
 @bot.message_handler(commands=['all'])
 def show_pdf_content(message):
-    # Проверяем, есть ли сохраненное содержимое PDF для этого чата
     if message.chat.id in pdf_content:
         content = pdf_content[message.chat.id]
-        # Отправляем содержимое PDF в чат
-        # Если текст слишком длинный, разбиваем его на части
         if len(content) > 4096:
             for part in [content[i:i + 4096] for i in range(0, len(content), 4096)]:
                 bot.send_message(message.chat.id, part)
