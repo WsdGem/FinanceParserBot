@@ -1,5 +1,5 @@
 import telebot
-from PyPDF2 import PdfReader
+from pdfminer.high_level import extract_text  # Заменяем PyPDF2 на pdfminer.six
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import re
@@ -9,14 +9,13 @@ bot = telebot.TeleBot(API_TOKEN)
 
 # Настройка доступа к Google Sheets
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name('C:/Users/student/Desktop/GTD', scope)
+creds = ServiceAccountCredentials.from_json_keyfile_name('D:/Project/FinanceParserBot/transfertablesbot-56526b15c394.json', scope)
 client = gspread.authorize(creds)
 
 # Открытие Google Таблицы
 spreadsheet = client.open("PDF Data").sheet1
 
 pdf_content = {}
-
 
 # Функция для извлечения Плательщика
 def extract_payer(text):
@@ -25,7 +24,7 @@ def extract_payer(text):
     if payer:
         return payer[0].replace("Плательщик", "").strip()
 
-    org_pattern = r"(?:ООО|ИП|ПАО|АО)\s[\"«]?[А-Яа-яЁё0-9\s\-—]+[\"»]?"
+    org_pattern = r"(?:ООО|ИП|ПАО|АО|ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ|ФИЛИАЛ|Общество с ограниченной ответственностью)\s[\"«]?[А-Яа-яЁё0-9\s\-—]+[\"»]?"
     organizations = re.findall(org_pattern, text)
     return organizations[0] if organizations else ""
 
@@ -36,7 +35,7 @@ def extract_recipient(text):
     if recipient:
         return recipient[0].replace("Получатель", "").strip()
 
-    org_pattern = r"(?:ООО|ИП|ПАО|АО|)\s[\"«]?[А-Яа-яЁё0-9\s\-—]+[\"»]?"
+    org_pattern = r"(?:ООО|ИП|ПАО|АО|ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ|ФИЛИАЛ|Общество с ограниченной ответственностью)\s[\"«]?[А-Яа-яЁё0-9\s\-—]+[\"»]?"
     organizations = re.findall(org_pattern, text)
     return organizations[3] if len(organizations) > 3 else ""
 
@@ -60,20 +59,18 @@ def extract_amounts(text):
 
 # Функция для извлечения Статуса платежа
 def extract_payment_status(text):
-    status_pattern = r"ПРОВЕДЕНО|Исполнен"
+    status_pattern = r"ПРОВЕДЕНО|Исполнен|ИСПОЛНЕНО"
     match = re.search(status_pattern, text)
     return match.group() if match else ""
-
 
 # Функция для проверки и добавления заголовков
 def ensure_headers():
     existing_headers = spreadsheet.row_values(1)
     required_headers = ["Плательщик", "Получатель", "Дата", "ИНН плательщика", "ИНН получателя", "Сумма",
-                        "Статус платежа"] # Заголовки
+                        "Статус платежа"]  # Заголовки
 
     if existing_headers != required_headers:
         spreadsheet.insert_row(required_headers, 1)
-
 
 @bot.message_handler(content_types=['document'])
 def handle_document(message):
@@ -85,11 +82,8 @@ def handle_document(message):
         with open('uploaded_file.pdf', 'wb') as new_file:
             new_file.write(downloaded_file)
 
-        # Чтение содержимого PDF
-        reader = PdfReader('uploaded_file.pdf')
-        content = ""
-        for page in reader.pages:
-            content += page.extract_text() + '\n'
+        # Чтение содержимого PDF с использованием pdfminer.six
+        content = extract_text('uploaded_file.pdf')  # Извлекаем весь текст из PDF
         pdf_content[message.chat.id] = content
 
         # Извлечение данных
@@ -98,10 +92,9 @@ def handle_document(message):
         date = extract_dates(content)  # Извлекаем Дату
         amount = extract_amounts(content)  # Извлекаем Сумму
         inns = extract_inn(content)  # Извлекаем ИНН
-        payer_inn = inns[0] if len(inns) > 0 else "" # ИНН плательщика
-        recipient_inn = inns[1] if len(inns) > 1 else "" # ИНН получателя
+        payer_inn = inns[0] if len(inns) > 0 else ""  # ИНН плательщика
+        recipient_inn = inns[1] if len(inns) > 1 else ""  # ИНН получателя
         payment_status = extract_payment_status(content)  # Извлекаем статус платежа
-
 
         ensure_headers()
         data_to_insert = []
@@ -117,7 +110,6 @@ def handle_document(message):
     except Exception as e:
         print("Ошибка:", e)
         bot.reply_to(message, f"Произошла ошибка при обработке файла: {e}")
-
 
 # Команда /all
 @bot.message_handler(commands=['all'])
