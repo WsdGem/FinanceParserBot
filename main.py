@@ -1,15 +1,22 @@
 import telebot
+from dotenv import load_dotenv
+import os
 from pdfminer.high_level import extract_text
 import re
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
+load_dotenv()
+
 # Инициализация бота
+TOKEN = os.getenv("TELEGRAM_API_KEY")
 bot = telebot.TeleBot(TOKEN)
+
+
 
 # Настройка Google Sheets
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("D:/Project/FinanceParserBot/transfertablesbot-56526b15c394.json", scope)
+creds = ServiceAccountCredentials.from_json_keyfile_name("D:/Project/FinanceParserBot-main/financeparserbot-a1f01b2f9806.json", scope)
 client = gspread.authorize(creds)
 sheet = client.open("PDF Data").sheet1
 
@@ -85,9 +92,3 @@ def send_full_text(message):
         print("Ошибка при обработке PDF:", e)
 
 bot.polling()
-
-
-
-
-
-# pip install telebot pdfminer.six regex gspread oauth2client PyPDF2
