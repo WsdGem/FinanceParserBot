@@ -1,0 +1,1 @@
+pip install python-dotenv telebot pdfminer.six gspread oauth2client
